@@ -1,53 +1,138 @@
 import java.time.LocalTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Scanner;
+
 /**
- * A class representing an exception that occurs when attempting to schedule an appointment with a dentist.
+ * Custom exception class for handling appointment-related exceptions.
  */
 class AppointmentException extends Exception {
-    /**
-     * Constructs an AppointmentException with a specified error message.
-     *
-     * @param message the error message
-     */
     public AppointmentException(String message) {
         super(message);
     }
 }
 
 /**
- * A class representing a dentist and allowing appointments to be scheduled.
+ * Represents a Dentist and manages their appointments.
  */
+
 class Dentist {
-    private static final int WORK_HOURS_START = 8;
-    private static final int WORK_HOURS_END = 17;
-    private static final int LUNCH_START = 12;
-    private static final int LUNCH_END = 13;
+    private static Map<LocalTime, LocalTime> scheduledAppointments = new HashMap<>();
+    private static final LocalTime WORK_HOURS_START = LocalTime.of(8, 0);
+    private static final LocalTime WORK_HOURS_END = LocalTime.of(17, 0);
+    private static final LocalTime LUNCH_START = LocalTime.of(12, 0);
+    private static final LocalTime LUNCH_END = LocalTime.of(13, 0);
     private static final int APPOINTMENT_DURATION = 1;
 
+
     /**
-     * Attempts to schedule an appointment at the requested time.
+     * Attempts to make an appointment at the requested time.
      *
-     * @param requestedTime the time for which the appointment is requested
-     * @throws AppointmentException if the requested time is outside working hours or during lunch break
+     * @param requestedTime The time for the requested appointment.
+     * @throws AppointmentException If the appointment cannot be scheduled.
      */
     public static void makeAppointment(LocalTime requestedTime) throws AppointmentException {
-        if (requestedTime.getHour() < WORK_HOURS_START ||
-                requestedTime.getHour() + APPOINTMENT_DURATION > WORK_HOURS_END ||
-                (requestedTime.getHour() >= LUNCH_START && requestedTime.getHour() < LUNCH_END)) {
+        LocalTime endTime = requestedTime.plusHours(APPOINTMENT_DURATION);
+        if (requestedTime.isBefore(WORK_HOURS_START) ||
+                requestedTime.plusHours(APPOINTMENT_DURATION).isAfter(WORK_HOURS_END) ||
+                (requestedTime.isAfter(LUNCH_START)   && requestedTime.isBefore(LUNCH_END)) ||
+                (endTime.isAfter(LUNCH_START) && endTime.isBefore(LUNCH_END)) ||
+                (requestedTime.equals(LUNCH_START)) || (requestedTime.equals(LUNCH_END)) ||
+                (endTime.equals(LUNCH_START)) || (endTime.equals(LUNCH_END)) ||
+                (!isAppointmentPossible(requestedTime))) {
             throw new AppointmentException("Doctor is not available at this time");
         }
 
+
+        scheduledAppointments.put(requestedTime, endTime);
         System.out.println("Appointment scheduled at " + requestedTime);
+    }
+
+    /**
+     * Displays the list of scheduled appointments.
+     */
+    public static void showScheduledAppointments() {
+        if (scheduledAppointments.isEmpty()) {
+            System.out.println("Записів немає.");
+        } else {
+            System.out.println("Зайняті години:");
+            for (Map.Entry<LocalTime, LocalTime> entry : scheduledAppointments.entrySet()) {
+                System.out.println(entry.getKey() + " - " + entry.getValue());
+            }
+        }
+    }
+
+
+    /**
+     * Checks if an appointment is possible at the requested time.
+     *
+     * @param requestedTime The requested time for an appointment.
+     * @return True if an appointment is possible, false otherwise.
+     */
+
+    public static boolean isAppointmentPossible(LocalTime requestedTime) {
+        LocalTime requestedEndTime = requestedTime.plusHours(APPOINTMENT_DURATION);
+
+        for (Map.Entry<LocalTime, LocalTime> entry : scheduledAppointments.entrySet()) {
+            LocalTime existingTime = entry.getKey();
+            LocalTime existingEndTime = entry.getValue();
+
+            if ((requestedTime.isAfter(existingTime) && requestedTime.isBefore(existingEndTime)) ||
+                    (requestedEndTime.isAfter(existingTime) && requestedEndTime.isBefore(existingEndTime)) ||
+                    (requestedTime.isBefore(existingTime) && requestedEndTime.isAfter(existingEndTime))) {
+                return false;
+            }
+        }
+        return true;
     }
 }
 
+/**
+ * Main class to run the appointment scheduling program.
+ */
+
 public class Main {
+    /**
+     * Main method to start the appointment scheduling program.
+     *
+     * @param args Command-line arguments (not used in this program).
+     */
+
     public static void main(String[] args) {
-        try {
-            Dentist.makeAppointment(LocalTime.of(10, 0));
-            Dentist.makeAppointment(LocalTime.of(13, 30));
-            Dentist.makeAppointment(LocalTime.of(18, 0));
-        } catch (AppointmentException e) {
-            System.out.println("Unable to schedule appointment: " + e.getMessage());
+        Scanner scanner = new Scanner(System.in);
+        boolean fl = true;
+        while (fl) {
+            System.out.println("Меню:");
+            System.out.println("1.Подивитись зайняті години");
+            System.out.println("2.Додати запис до лікаря");
+            System.out.println("3.Вийти з програми");
+            System.out.print("Оберіть опцію: ");
+
+            int choice = scanner.nextInt();
+            scanner.nextLine();
+
+            switch (choice) {
+                case 1:
+                    Dentist.showScheduledAppointments();
+                    break;
+                case 2:
+                    try {
+                        System.out.println("Введіть години для запису (години та хвилини):");
+                        int hour = scanner.nextInt();
+                        int minute = scanner.nextInt();
+                        Dentist.makeAppointment(LocalTime.of(hour, minute));
+                    } catch (AppointmentException e) {
+                        System.out.println("Неможливо назначити запис: " + e.getMessage());
+                    }
+                    break;
+                case 3:
+                    System.out.println("До побачення!");
+                    fl = false;
+                    break;
+                default:
+                    System.out.println("Невірний вибір. Спробуйте знову.");
+            }
         }
+        scanner.close();
     }
 }
