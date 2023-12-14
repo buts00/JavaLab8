@@ -33,19 +33,17 @@ class Dentist {
      */
     public static void makeAppointment(LocalTime requestedTime) throws AppointmentException {
         LocalTime endTime = requestedTime.plusHours(APPOINTMENT_DURATION);
-        if (requestedTime.isBefore(WORK_HOURS_START) ||
-                requestedTime.plusHours(APPOINTMENT_DURATION).isAfter(WORK_HOURS_END) ||
-                (requestedTime.isAfter(LUNCH_START)   && requestedTime.isBefore(LUNCH_END)) ||
+        if( requestedTime.isBefore(WORK_HOURS_START) || endTime.isAfter(WORK_HOURS_END) ||
+                (requestedTime.isAfter(LUNCH_START) && requestedTime.isBefore(LUNCH_END)) ||
                 (endTime.isAfter(LUNCH_START) && endTime.isBefore(LUNCH_END)) ||
-                (requestedTime.equals(LUNCH_START)) || (requestedTime.equals(LUNCH_END)) ||
-                (endTime.equals(LUNCH_START)) || (endTime.equals(LUNCH_END)) ||
-                (!isAppointmentPossible(requestedTime))) {
-            throw new AppointmentException("Doctor is not available at this time");
+                (requestedTime.equals(LUNCH_START) || !isAppointmentPossible(requestedTime) )
+        ) {
+            throw new AppointmentException("Лікар не може в цей час!");
         }
 
 
         scheduledAppointments.put(requestedTime, endTime);
-        System.out.println("Appointment scheduled at " + requestedTime);
+        System.out.println("Запис збережено " + requestedTime);
     }
 
     /**
@@ -71,15 +69,15 @@ class Dentist {
      */
 
     public static boolean isAppointmentPossible(LocalTime requestedTime) {
-        LocalTime requestedEndTime = requestedTime.plusHours(APPOINTMENT_DURATION);
+        LocalTime endTime = requestedTime.plusHours(APPOINTMENT_DURATION);
 
         for (Map.Entry<LocalTime, LocalTime> entry : scheduledAppointments.entrySet()) {
             LocalTime existingTime = entry.getKey();
             LocalTime existingEndTime = entry.getValue();
 
             if ((requestedTime.isAfter(existingTime) && requestedTime.isBefore(existingEndTime)) ||
-                    (requestedEndTime.isAfter(existingTime) && requestedEndTime.isBefore(existingEndTime)) ||
-                    (requestedTime.isBefore(existingTime) && requestedEndTime.isAfter(existingEndTime))) {
+                    (endTime.isAfter(existingTime) && endTime.isBefore(existingEndTime)) ||
+                    requestedTime.equals(existingTime)) {
                 return false;
             }
         }
@@ -122,7 +120,7 @@ public class Main {
                         int minute = scanner.nextInt();
                         Dentist.makeAppointment(LocalTime.of(hour, minute));
                     } catch (AppointmentException e) {
-                        System.out.println("Неможливо назначити запис: " + e.getMessage());
+                        System.out.println(e.getMessage());
                     }
                     break;
                 case 3:
