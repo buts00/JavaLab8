@@ -1,5 +1,6 @@
 import java.time.LocalTime;
 import java.util.HashMap;
+import java.util.InputMismatchException;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -104,26 +105,34 @@ public class Main {
             System.out.println("1.Подивитись зайняті години");
             System.out.println("2.Додати запис до лікаря");
             System.out.println("3.Вийти з програми");
-            System.out.print("Оберіть опцію: ");
+            System.out.println("Оберіть опцію:");
 
-            int choice = scanner.nextInt();
-            scanner.nextLine();
+            String choice = scanner.nextLine();
+
 
             switch (choice) {
-                case 1:
+                case "1":
                     Dentist.showScheduledAppointments();
                     break;
-                case 2:
+                case "2":
+                    System.out.println("Введіть години для запису (години та хвилини у форматі HH MM):");
                     try {
-                        System.out.println("Введіть години для запису (години та хвилини):");
                         int hour = scanner.nextInt();
                         int minute = scanner.nextInt();
+                        if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+                            throw new IllegalArgumentException("Введено некоректний час.");
+                        }
+
                         Dentist.makeAppointment(LocalTime.of(hour, minute));
-                    } catch (AppointmentException e) {
+                    } catch (AppointmentException | IllegalArgumentException e) {
                         System.out.println(e.getMessage());
+                    } catch (InputMismatchException e) {
+                        System.out.println("Введіть два цілих числа через пробіл.");
                     }
+                    scanner.nextLine();
                     break;
-                case 3:
+
+                case "3":
                     System.out.println("До побачення!");
                     fl = false;
                     break;
